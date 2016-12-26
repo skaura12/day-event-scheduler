@@ -1,0 +1,38 @@
+header .title{
+    text-align: center;
+}
+.main {
+    margin: 0 40px;
+}
+
+.main .day-header-box {
+    float: left;
+    display: inline-block;
+    height: 100px;
+    text-align: center;
+    width: 100px;
+}
+
+.main .day-header-box .day-header {
+    padding: 30px 0;
+}
+
+.main .day-grid {
+    margin-left: 100px;
+}
+
+.main .day-grid {
+    .heading, .time-slot-box {
+        float: left;
+    }
+    .time-slot-box {
+        background-color: e9e1e1;
+        height: 80px;
+        border: 1px solid #d3d3d3;
+    }
+}
+.main .day-grid .events-row .hour-box {
+    background-color: e9e1e1;
+    height: 80px;
+    border: 1px solid #d3d3d3;
+}
