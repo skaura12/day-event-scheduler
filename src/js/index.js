@@ -4,6 +4,16 @@
     function Plugin(element,options){
         this.$ele = element;
         this.options = $.extend({}, $.fn[pluginName].defaults,options);
+        if(!localStorage.getItem("events")){
+            this.events = [];
+        }else{
+            try {
+                this.events = JSON.parse(localStorage.getItem("events"));
+            }catch (ex){
+                console.log("Can not read localStorage as JSON");
+            }
+        }
+
         this.init();
     }
 
@@ -11,6 +21,7 @@
         init: function(){
             var self = this;
             self._buildTemplate();
+            self.widthForOneMinute  = self.$ele.find(".time-slot-box").outerWidth()/60 ;
             self._attachEvents();
         },
         _buildTemplate: function(){
@@ -31,8 +42,7 @@
                 ++iterator;
             }
             iterator = 0;
-            headingsRow.appendTo(self.$ele);
-            durationBoxRow.appendTo(self.$ele);
+            $("<div class='day-timeline'></div>").append(headingsRow).append(durationBoxRow).appendTo(self.$ele);
             var modalString =
                 '<div id= "add-event-modal" class="modal fade" tabindex="-1" role="dialog">' +
                 '<div class="modal-dialog" role="document">' +
@@ -55,7 +65,7 @@
                 '</div>' +
                 '<div class="modal-footer">'+
                 '<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>'+
-                '<button type="button" class="btn btn-primary">Save changes</button>'+
+                '<button type="button" class="btn btn-primary save">Save changes</button>'+
                 '</div>' +
                 '</div>' +
                 '</div>' +
@@ -70,9 +80,22 @@
                 console.log(startTime);
                 console.log(endTime);
                 $("#add-event-modal").modal("show");
-                self.$ele.find("#event-duration .start").timepicker("setTime",moment(startTime,"h:mma")._d);
-                self.$ele.find("#event-duration .end").timepicker("setTime",moment(endTime,"h:mma")._d)
+                self.$ele.find("#event-duration .start").timepicker("setTime",startTime);
+                self.$ele.find("#event-duration .end").timepicker("setTime",endTime);
 
+            });
+
+            self.$ele.find(".btn.save").on("click",function (event) {
+                var event= {
+                    name: self.$ele.find("#add-event-modal .input[name='event-name']").val(),
+                    from: self.$ele.find("#event-duration .start").val(),
+                    to: self.$ele.find("#event-duration .end").val()
+                },duration, positionFromLeft;
+                self.events.push(event);
+                self._updateLocalStorage();
+                duration = (moment(event.to,"h:mma").diff(moment(event.from,"h:mma"),'minutes'));
+                positionFromLeft = (moment(event.from ,"h:mma").diff(moment(self.options.startTime,"h:mma"),'minutes'))*self.widthForOneMinute;
+                $("<div class='event'></div>").width(duration*self.widthForOneMinute).css("left",positionFromLeft).appendTo(self.$ele.find(".day-timeline"));
             });
 
             $('#event-duration .start').timepicker({
@@ -93,6 +116,10 @@
 
             var timeOnlyExampleEl = document.getElementById('event-duration');
             var timeOnlyDatepair = new Datepair(timeOnlyExampleEl);
+        },
+        _updateLocalStorage: function () {
+            var self = this;
+            localStorage.setItem("events",JSON.stringify(self.events));
         },
         resize:function(){
             var self = this;

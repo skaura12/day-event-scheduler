@@ -47,3 +47,36 @@ header .title{
         }
     }
 }
+.day-timeline {
+    position: relative;
+    .event {
+        height: 80px;
+        background-color: #a0a4b4;
+        position: absolute;
+        top: 20px;
+        opacity: 0.5;
+        &:nth-of-type(1){
+            background-color: #a0a4b4;
+        }
+        &:nth-of-type(1){
+            background-color: #b47357;
+
+        }
+        &:nth-of-type(2){
+            background-color: #7ab449;
+
+        }
+        &:nth-of-type(3){
+            background-color: #b40c9b;
+
+        }
+        &:nth-of-type(4){
+            background-color: #b4115a;
+
+        }
+        &:nth-of-type(5){
+            background-color: #060610;
+
+        }
+    }
+}
