@@ -9,12 +9,27 @@
         }else{
             try {
                 this.events = JSON.parse(localStorage.getItem("events"));
+                console.log("events",this.events);
             }catch (ex){
                 console.log("Can not read localStorage as JSON");
             }
         }
 
         this.init();
+    }
+
+    function generateEventId() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+            return v.toString(16);
+        });
+    }
+
+    function findEventById(events,id) {
+        var results = events.filter(function (ele) {
+            return ele.id === id;
+        })
+        return results[0];
     }
 
     Plugin.prototype = {
@@ -64,8 +79,9 @@
                     '</p>' +
                 '</div>' +
                 '<div class="modal-footer">'+
-                '<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>'+
-                '<button type="button" class="btn btn-primary save">Save changes</button>'+
+                '<button type="button" class="btn btn-default" data-dismiss="modal">Discard</button>'+
+                '<button type="button" class="btn btn-primary delete">Delete</button>'+
+                '<button type="button" class="btn btn-primary save">Save</button>'+
                 '</div>' +
                 '</div>' +
                 '</div>' +
@@ -79,24 +95,70 @@
                     endTime = $(event.target).data("endtime");
                 console.log(startTime);
                 console.log(endTime);
+                self.$ele.find("#add-event-modal").data("mode","new");
+
                 $("#add-event-modal").modal("show");
                 self.$ele.find("#event-duration .start").timepicker("setTime",startTime);
                 self.$ele.find("#event-duration .end").timepicker("setTime",endTime);
-
+                self.$ele.find("#add-event-modal input[name='event-name']").val("");
+                self.$ele.find("#add-event-modal .btn.delete").addClass("hidden");
             });
 
-            self.$ele.find(".btn.save").on("click",function (event) {
-                var event= {
-                    name: self.$ele.find("#add-event-modal .input[name='event-name']").val(),
-                    from: self.$ele.find("#event-duration .start").val(),
-                    to: self.$ele.find("#event-duration .end").val()
-                },duration, positionFromLeft;
-                self.events.push(event);
+            self.$ele.find(".btn.save").on("click",function (event,mode) {
+                var name = self.$ele.find("#add-event-modal input[name='event-name']").val(),
+                    from = self.$ele.find("#event-duration .start").val(),
+                    to = self.$ele.find("#event-duration .end").val(),
+                    event,$eventElement,duration, positionFromLeft,mode = self.$ele.find("#add-event-modal").data("mode");
+
+                if(mode === "new"){
+                    event = {
+                        id: generateEventId()
+                    }
+                    self.events.push(event);
+                    $eventElement = $("<div class='event'></div>").attr("data-id",event.id);
+                }else if(mode === "edit"){
+                    event = findEventById(self.events,self.$ele.find("#add-event-modal").data("id"));
+                    $eventElement = self.$ele.find(".day-timeline .event[data-id='" + event.id + "']");
+                }
+                event.name = name;
+                event.from = from;
+                event.to =  to;
+
                 self._updateLocalStorage();
                 duration = (moment(event.to,"h:mma").diff(moment(event.from,"h:mma"),'minutes'));
                 positionFromLeft = (moment(event.from ,"h:mma").diff(moment(self.options.startTime,"h:mma"),'minutes'))*self.widthForOneMinute;
-                $("<div class='event'></div>").width(duration*self.widthForOneMinute).css("left",positionFromLeft).appendTo(self.$ele.find(".day-timeline"));
+                $eventElement.width(duration*self.widthForOneMinute).css("left",positionFromLeft).attr("title",event.name).text(event.name).appendTo(self.$ele.find(".day-timeline"));
+                $("#add-event-modal").modal("hide");
             });
+
+            self.$ele.find(".btn.delete").on("click",function(){
+                var eventId = self.$ele.find("#add-event-modal").data("id"),eventIndex;
+                self.events.forEach(function (ele,index) {
+                    if(ele.id === eventId){
+                        eventIndex = index;
+                    }
+                })
+                self.events.splice(eventIndex,1);
+                self._updateLocalStorage();
+                self.$ele.find(".day-timeline .event[data-id='"+eventId +"']").remove();
+                $("#add-event-modal").modal("hide");
+
+            });
+
+            self.$ele.find(".day-timeline").on("click",".event",function (event) {
+                //add data-id to add-event-modal domElement
+                var event = findEventById(self.events,$(event.target).data("id"));
+
+                self.$ele.find("#event-duration .start").timepicker("setTime",event.from);
+                self.$ele.find("#event-duration .end").timepicker("setTime",event.to);
+                self.$ele.find("#add-event-modal input[name='event-name']").val(event.name);
+                self.$ele.find("#add-event-modal").data("mode","edit").data("id",event.id);
+                $("#add-event-modal").modal("show");
+
+            });
+            self.$ele.find("#add-event-modal").on("hide.bs.modal",function (event) {
+                $(event.target).find(".btn.delete").removeClass("hidden");
+            })
 
             $('#event-duration .start').timepicker({
                 'showDuration': false,

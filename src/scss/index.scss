@@ -29,6 +29,10 @@ header .title{
         background-color: e9e1e1;
         height: 80px;
         border: 1px solid #d3d3d3;
+        cursor: pointer;
+        &:hover{
+            background-color: #a0a4b4;
+        }
     }
 }
 .main .day-grid .events-row .hour-box {
@@ -55,6 +59,14 @@ header .title{
         position: absolute;
         top: 20px;
         opacity: 0.5;
+        margin: auto;
+        font-weight: 800;
+        text-align: center;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
+        line-height: 80px;
+        cursor: pointer;
         &:nth-of-type(1){
             background-color: #a0a4b4;
         }
