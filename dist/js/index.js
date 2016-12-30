@@ -4,15 +4,16 @@
     function Plugin(element,options){
         this.$ele = element;
         this.options = $.extend({}, $.fn[pluginName].defaults,options);
-        if(!localStorage.getItem("events")){
-            this.events = [];
-        }else{
+        if((localStorage.getItem("date") === moment().format("D/MM/YYYY")) && localStorage.getItem("events")){
             try {
                 this.events = JSON.parse(localStorage.getItem("events"));
-                console.log("events",this.events);
             }catch (ex){
                 console.log("Can not read localStorage as JSON");
             }
+        }else{
+            this.events = [];
+            localStorage.setItem("date",moment().format("D/MM/YYYY"));
+            localStorage.setItem("events",JSON.stringify(this.events));
         }
 
         this.init();
@@ -38,7 +39,7 @@
         init: function(){
             var self = this;
             self._buildTemplate();
-            self.widthForOneMinute  = self.$ele.find(".time-slot-box").outerWidth()/60 ;
+            self.widthForOneMinute  = self.$ele.find(".time-slot-box").outerWidth()/30 ;
             self._attachEvents();
             self._addEventsFromHistory();
         },
@@ -56,15 +57,19 @@
             while(iterator != durationCount){
                 boxEndTime = moment(boxStartTime,"h:mma").add(60,"minutes").format("h:mma");
                 $("<div class='heading'>"+boxStartTime+"</div>").width(100/durationCount + "%").appendTo(headingsRow);
-                $("<div class='time-slot-box' data-startTime='"+boxStartTime+"' data-endTime='"+boxEndTime+"'></div>").width(100/durationCount + "%").appendTo(durationBoxRow);
                 boxStartTime = boxEndTime;
                 ++iterator;
             }
             iterator = 0;
-            while(iterator != boxCount){
+            boxStartTime = startTime;
+            while(iterator!=boxCount){
+                boxEndTime = moment(boxStartTime,"h:mma").add(30,"minutes").format("h:mma");
+                $("<div class='time-slot-box' data-startTime='"+boxStartTime+"' data-endTime='"+boxEndTime+"'></div>").width(100/boxCount + "%").appendTo(durationBoxRow);
+                boxStartTime = boxEndTime;
 
+                ++iterator;
             }
-            $("<div class='day-timeline'></div>").append(headingsRow).append(durationBoxRow).appendTo(self.$ele);
+            $("<div class='day-timeline'></div>").append(headingsRow).append(durationBoxRow).append("<div class='event-wrapper'></div>").appendTo(self.$ele);
             var modalString =
                 '<div id= "add-event-modal" class="modal fade" tabindex="-1" role="dialog">' +
                 '<div class="modal-dialog" role="document">' +
@@ -100,8 +105,7 @@
             self.$ele.find(".time-slot-box").on("click",function (event) {
                 var startTime = $(event.target).data("starttime"),
                     endTime = $(event.target).data("endtime");
-                console.log(startTime);
-                console.log(endTime);
+
                 self.$ele.find("#add-event-modal").data("mode","new");
 
                 $("#add-event-modal").modal("show");
@@ -121,13 +125,15 @@
                         "mode" :"edit",
                         "from": from,
                         "to": to,
+                        "name": name,
                         "id": self.$ele.find("#add-event-modal").data("id")
                     })
                 }else if(mode === "new"){
                     isValidEvent = self._checkEventValidity({
                         "mode" :"new",
                         "from": from,
-                        "to": to
+                        "to": to,
+                        "name": name
                     })
                 }
                 if(isValidEvent) {
@@ -137,7 +143,7 @@
                         };
                         self.events.push(event);
                         $eventElement = $("<div class='event'></div>").attr("data-id", event.id)
-                        $eventElement.appendTo(self.$ele.find(".day-timeline"));
+                        $eventElement.appendTo(self.$ele.find(".day-timeline .event-wrapper"));
                     } else if (mode === "edit") {
                         event = findEventById(self.events, self.$ele.find("#add-event-modal").data("id"));
                         $eventElement = self.$ele.find(".day-timeline .event[data-id='" + event.id + "']");
@@ -161,7 +167,7 @@
                 })
                 self.events.splice(eventIndex,1);
                 self._updateLocalStorage();
-                self.$ele.find(".day-timeline .event[data-id='"+eventId +"']").remove();
+                self.$ele.find(".day-timeline .event-wrapper .event[data-id='"+eventId +"']").remove();
                 $("#add-event-modal").modal("hide");
 
             });
@@ -177,7 +183,7 @@
                 $("#add-event-modal").modal("show");
 
             });
-            self.$ele.find("#add-event-modal").on("hide.bs.modal",function (event) {
+            self.$ele.find("#add-event-modal").on("hidden.bs.modal",function (event) {
                 $(event.target).find(".btn.delete").removeClass("hidden");
             })
 
@@ -207,6 +213,11 @@
             var self = this,
                 fromMoment = moment(eventJson.from,"h:mma"),
                 toMoment = moment(eventJson.to,"h:mma");
+
+            if(!eventJson.name.length){
+                alert("Please specify an Event name to continue");
+                return false;
+            }
 
             if(fromMoment.isAfter(toMoment)){
                 alert("Event Start Time cannot be after Event End Time");
@@ -244,7 +255,7 @@
         _addEventsFromHistory: function(){
             var self = this;
             self.events.forEach(function(e){
-                $("<div class='event'></div>").attr("data-id", e.id).text(e.name).attr("title", e.name).appendTo(self.$ele.find(".day-timeline"));
+                $("<div class='event'></div>").attr("data-id", e.id).text(e.name).attr("title", e.name).appendTo(self.$ele.find(".day-timeline .event-wrapper"));
                 self._positionEventOnTimeline(e);
             })
         },
