@@ -234,6 +234,11 @@
                 return false;
             }
 
+            if(fromMoment.isAfter(moment(self.options.endTime,"h:mma")) || fromMoment.isBefore(moment(self.options.startTime,"h:mma")) || toMoment.isAfter(moment(self.options.endTime,"h:mma")) || toMoment.isBefore(moment(self.options.startTime,"h:mma")) ){
+                alert("You can only schedule events between 9am to 5pm");
+                return false;
+            }
+
             for(var i=0; i< self.events.length; ++i){
                 if( moment(self.events[i].from,"h:mma").isBetween(fromMoment,toMoment) ||
                     moment(self.events[i].to,"h:mma").isBetween(fromMoment,toMoment) ||
