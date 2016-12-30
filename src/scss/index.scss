@@ -67,6 +67,7 @@ header .title{
         overflow: hidden;
         line-height: 80px;
         cursor: pointer;
+        border: 1px solid gray;
         &:nth-of-type(1){
             background-color: #a0a4b4;
         }

@@ -32,12 +32,15 @@
         return results[0];
     }
 
+
+
     Plugin.prototype = {
         init: function(){
             var self = this;
             self._buildTemplate();
             self.widthForOneMinute  = self.$ele.find(".time-slot-box").outerWidth()/60 ;
             self._attachEvents();
+            self._addEventsFromHistory();
         },
         _buildTemplate: function(){
             var self = this,
@@ -46,6 +49,7 @@
                 headingsRow = $("<div class='headings-row'></div>"),
                 durationBoxRow = $("<div class='time-slot-row'></div>"),
                 durationCount= moment.duration(moment(endTime,"h:mma").diff(moment(startTime,"h:mma"))).asMinutes()/60,
+                boxCount= moment.duration(moment(endTime,"h:mma").diff(moment(startTime,"h:mma"))).asMinutes()/30,
                 iterator = 0;
 
             boxStartTime = startTime;
@@ -57,6 +61,9 @@
                 ++iterator;
             }
             iterator = 0;
+            while(iterator != boxCount){
+
+            }
             $("<div class='day-timeline'></div>").append(headingsRow).append(durationBoxRow).appendTo(self.$ele);
             var modalString =
                 '<div id= "add-event-modal" class="modal fade" tabindex="-1" role="dialog">' +
@@ -108,27 +115,41 @@
                 var name = self.$ele.find("#add-event-modal input[name='event-name']").val(),
                     from = self.$ele.find("#event-duration .start").val(),
                     to = self.$ele.find("#event-duration .end").val(),
-                    event,$eventElement,duration, positionFromLeft,mode = self.$ele.find("#add-event-modal").data("mode");
-
-                if(mode === "new"){
-                    event = {
-                        id: generateEventId()
-                    }
-                    self.events.push(event);
-                    $eventElement = $("<div class='event'></div>").attr("data-id",event.id);
-                }else if(mode === "edit"){
-                    event = findEventById(self.events,self.$ele.find("#add-event-modal").data("id"));
-                    $eventElement = self.$ele.find(".day-timeline .event[data-id='" + event.id + "']");
+                    event,$eventElement,duration, positionFromLeft,mode = self.$ele.find("#add-event-modal").data("mode"),isValidEvent;
+                if(mode === "edit"){
+                    isValidEvent = self._checkEventValidity({
+                        "mode" :"edit",
+                        "from": from,
+                        "to": to,
+                        "id": self.$ele.find("#add-event-modal").data("id")
+                    })
+                }else if(mode === "new"){
+                    isValidEvent = self._checkEventValidity({
+                        "mode" :"new",
+                        "from": from,
+                        "to": to
+                    })
                 }
-                event.name = name;
-                event.from = from;
-                event.to =  to;
-
-                self._updateLocalStorage();
-                duration = (moment(event.to,"h:mma").diff(moment(event.from,"h:mma"),'minutes'));
-                positionFromLeft = (moment(event.from ,"h:mma").diff(moment(self.options.startTime,"h:mma"),'minutes'))*self.widthForOneMinute;
-                $eventElement.width(duration*self.widthForOneMinute).css("left",positionFromLeft).attr("title",event.name).text(event.name).appendTo(self.$ele.find(".day-timeline"));
-                $("#add-event-modal").modal("hide");
+                if(isValidEvent) {
+                    if (mode === "new") {
+                        event = {
+                            id: generateEventId()
+                        };
+                        self.events.push(event);
+                        $eventElement = $("<div class='event'></div>").attr("data-id", event.id)
+                        $eventElement.appendTo(self.$ele.find(".day-timeline"));
+                    } else if (mode === "edit") {
+                        event = findEventById(self.events, self.$ele.find("#add-event-modal").data("id"));
+                        $eventElement = self.$ele.find(".day-timeline .event[data-id='" + event.id + "']");
+                    }
+                    event.name = name;
+                    event.from = from;
+                    event.to = to;
+                    self._updateLocalStorage();
+                    $eventElement.text(event.name).attr("title", event.name);
+                    self._positionEventOnTimeline(event);
+                    $("#add-event-modal").modal("hide");
+                }
             });
 
             self.$ele.find(".btn.delete").on("click",function(){
@@ -178,13 +199,71 @@
 
             var timeOnlyExampleEl = document.getElementById('event-duration');
             var timeOnlyDatepair = new Datepair(timeOnlyExampleEl);
+            $(window).on("resize",function(event){
+                self.resize();
+            });
+        },
+        _checkEventValidity : function(eventJson){
+            var self = this,
+                fromMoment = moment(eventJson.from,"h:mma"),
+                toMoment = moment(eventJson.to,"h:mma");
+
+            if(fromMoment.isAfter(toMoment)){
+                alert("Event Start Time cannot be after Event End Time");
+                return false;
+            }
+
+            if(moment.duration(toMoment.diff(fromMoment)).asMinutes()<30 ){
+                alert("Event Duration can not be less than 30 minutes");
+                return false;
+            }
+
+            if(moment.duration(toMoment.diff(fromMoment)).asMinutes()> 240){
+                alert("Event Duration can not be more than 4 hours");
+                return false;
+            }
+
+            for(var i=0; i< self.events.length; ++i){
+                if( moment(self.events[i].from,"h:mma").isBetween(fromMoment,toMoment) ||
+                    moment(self.events[i].to,"h:mma").isBetween(fromMoment,toMoment) ||
+                    fromMoment.isBetween(moment(self.events[i].from,"h:mma"),moment(self.events[i].to,"h:mma")) ||
+                    toMoment.isBetween(moment(self.events[i].from,"h:mma"),moment(self.events[i].to,"h:mma"))){
+
+                    if(eventJson.mode === "new" || (eventJson.mode=== "edit" && self.events[i].id != eventJson.id)) {
+                        alert("Can not have overlapping events.Please reschedule this or other events");
+                        return false;
+                    }
+                }
+            }
+            return true;
         },
         _updateLocalStorage: function () {
             var self = this;
             localStorage.setItem("events",JSON.stringify(self.events));
         },
+        _addEventsFromHistory: function(){
+            var self = this;
+            self.events.forEach(function(e){
+                $("<div class='event'></div>").attr("data-id", e.id).text(e.name).attr("title", e.name).appendTo(self.$ele.find(".day-timeline"));
+                self._positionEventOnTimeline(e);
+            })
+        },
+        _positionEventOnTimeline: function(eventJson){
+            var self = this,
+                $eventElement = self.$ele.find(".day-timeline .event[data-id='" + eventJson.id + "']"),
+                duration,
+                positionFromLeft;
+
+            duration = (moment(eventJson.to, "h:mma").diff(moment(eventJson.from, "h:mma"), 'minutes'));
+            positionFromLeft = (moment(eventJson.from, "h:mma").diff(moment(self.options.startTime, "h:mma"), 'minutes')) * self.widthForOneMinute;
+            $eventElement.width(duration * self.widthForOneMinute).css("left", positionFromLeft);
+        },
         resize:function(){
             var self = this;
+            self.widthForOneMinute  = self.$ele.find(".time-slot-box").outerWidth()/60;
+            self.events.forEach(function(e){
+                self._positionEventOnTimeline(e);
+            })
         },
         destroy: function(){
             this.$ele.empty();
