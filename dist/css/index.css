@@ -1,0 +1,70 @@
+header .title {
+  text-align: center; }
+
+.main {
+  margin: 0 40px; }
+
+.main .day-header-box {
+  float: left;
+  display: inline-block;
+  height: 100px;
+  text-align: center;
+  width: 100px; }
+
+.main .day-header-box .day-header {
+  padding: 30px 0; }
+
+.main .day-grid {
+  margin-left: 100px; }
+
+.main .day-grid .heading, .main .day-grid .time-slot-box {
+  float: left; }
+
+.main .day-grid .time-slot-box {
+  background-color: e9e1e1;
+  height: 80px;
+  border: 1px solid #d3d3d3;
+  cursor: pointer; }
+  .main .day-grid .time-slot-box:hover {
+    background-color: #a0a4b4; }
+
+.main .day-grid .events-row .hour-box {
+  background-color: e9e1e1;
+  height: 80px;
+  border: 1px solid #d3d3d3; }
+
+#add-event-modal label {
+  padding: 0 20px; }
+
+#add-event-modal #event-duration .time {
+  width: 75px; }
+
+.day-timeline {
+  position: relative; }
+  .day-timeline .event {
+    height: 80px;
+    background-color: #a0a4b4;
+    position: absolute;
+    top: 20px;
+    opacity: 0.5;
+    margin: auto;
+    font-weight: 800;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    line-height: 80px;
+    cursor: pointer;
+    border: 1px solid gray; }
+    .day-timeline .event:nth-of-type(1) {
+      background-color: #a0a4b4; }
+    .day-timeline .event:nth-of-type(1) {
+      background-color: #b47357; }
+    .day-timeline .event:nth-of-type(2) {
+      background-color: #7ab449; }
+    .day-timeline .event:nth-of-type(3) {
+      background-color: #b40c9b; }
+    .day-timeline .event:nth-of-type(4) {
+      background-color: #b4115a; }
+    .day-timeline .event:nth-of-type(5) {
+      background-color: #060610; }
