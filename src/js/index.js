@@ -271,7 +271,7 @@
         },
         resize:function(){
             var self = this;
-            self.widthForOneMinute  = self.$ele.find(".time-slot-box").outerWidth()/60;
+            self.widthForOneMinute  = self.$ele.find(".time-slot-box").outerWidth()/30;
             self.events.forEach(function(e){
                 self._positionEventOnTimeline(e);
             })
